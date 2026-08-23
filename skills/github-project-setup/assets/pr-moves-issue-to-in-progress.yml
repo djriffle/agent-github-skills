@@ -1,0 +1,68 @@
+name: Move linked issues to In progress
+
+# Before adding this workflow to a repository, ask the user whether they want
+# this CI automation implemented. Do not copy, commit, push, or enable it
+# without their explicit confirmation.
+
+# Requires a repo secret PROJECTS_TOKEN: a PAT (classic, scope `project`, or
+# fine-grained with Projects: read/write) belonging to a user with write
+# access to the project. GITHUB_TOKEN cannot write to user-owned Projects v2.
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review, edited]
+
+permissions:
+  contents: read
+
+jobs:
+  move-to-in-progress:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Move referenced issues to "In progress"
+        env:
+          GH_TOKEN: ${{ secrets.PROJECTS_TOKEN }}
+          OWNER: OWNER
+          REPO: REPO
+          PROJECT_NUMBER: PROJECT_NUMBER
+          STATUS_OPTION_NAME: In progress
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::warning::PROJECTS_TOKEN repo secret is not set — skipping project board update."
+            exit 0
+          fi
+
+          issue_numbers=$(printf '%s\n%s' "$PR_TITLE" "$PR_BODY" \
+            | grep -oE '#[0-9]+' | tr -d '#' | sort -un)
+
+          if [ -z "$issue_numbers" ]; then
+            echo "PR #$PR_NUMBER doesn't reference any issues — nothing to move."
+            exit 0
+          fi
+
+          project_id=$(gh project view "$PROJECT_NUMBER" --owner "$OWNER" --format json --jq '.id')
+          field_json=$(gh project field-list "$PROJECT_NUMBER" --owner "$OWNER" --format json)
+          field_id=$(echo "$field_json" | jq -r '.fields[] | select(.name=="Status") | .id')
+          option_id=$(echo "$field_json" | jq -r --arg name "$STATUS_OPTION_NAME" \
+            '.fields[] | select(.name=="Status") | .options[] | select(.name==$name) | .id')
+
+          if [ -z "$field_id" ] || [ -z "$option_id" ]; then
+            echo "::error::Could not resolve Status field or '$STATUS_OPTION_NAME' option on project #$PROJECT_NUMBER"
+            exit 1
+          fi
+
+          for n in $issue_numbers; do
+            issue_url="https://github.com/$OWNER/$REPO/issues/$n"
+            item_id=$(gh project item-list "$PROJECT_NUMBER" --owner "$OWNER" --format json \
+              --jq ".items[] | select(.content.number==$n) | .id")
+            if [ -z "$item_id" ]; then
+              item_id=$(gh project item-add "$PROJECT_NUMBER" --owner "$OWNER" --url "$issue_url" --format json --jq '.id')
+            fi
+            gh project item-edit --id "$item_id" --project-id "$project_id" --field-id "$field_id" --single-select-option-id "$option_id"
+            echo "Moved issue #$n to '$STATUS_OPTION_NAME'"
+          done
