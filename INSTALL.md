@@ -57,7 +57,7 @@ done
 
 ## Project-local installation
 
-For skills checked into one target repository, copy or symlink the four skill directories beneath the platform's project path:
+For skills checked into one target repository, copy or symlink the skill directories beneath the platform's project path:
 
 | Agent | Repository-local directory |
 | --- | --- |

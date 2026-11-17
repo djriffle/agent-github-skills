@@ -1,11 +1,12 @@
 # agent-github-skills
 
-Portable Agent Skills for consistent GitHub issue authoring, issue lifecycle management, repository label setup, and GitHub Projects v2 setup.
+Portable Agent Skills for consistent GitHub issue authoring, issue lifecycle management, repository label setup, GitHub Projects v2 setup, and image attachments.
 
 ## Included skills
 
 | Skill | Purpose |
 | --- | --- |
+| `github-attach-image` | Upload an image to GitHub's attachment store and embed it in an issue, PR, or comment without committing it. |
 | `github-issue-authoring` | Draft and file evidence-backed issues with one type label, project priority, and native sub-issue links. |
 | `github-issue-management` | Inspect and move issues through project status stages and verify PR-to-issue links. |
 | `github-project-setup` | Create or reconcile the standard Projects v2 board and PR-reference automation. |
@@ -16,7 +17,8 @@ The canonical skill directories live in [`skills/`](skills/). Each uses the port
 ## Requirements
 
 - [`gh`](https://cli.github.com/) authenticated for the repositories you manage
-- `jq` for the project and issue-management commands
+- `jq` for the project, issue-management, and image-attachment commands
+- `curl` for image uploads when `gh` lacks `--attach`
 - GitHub CLI `project` and `read:project` scopes for Projects v2 work
 
 The skills describe external mutations such as creating issues and changing project fields. Installing a skill does not authorize an agent to make those changes; the agent must still follow the user's requested scope and its environment's approval rules.
@@ -58,6 +60,7 @@ Start a new agent session if newly installed skills are not detected automatical
 - “Move issue #12 to In review.”
 - “Set up a practical issue-label taxonomy for this repository.”
 - “Create the standard GitHub Projects board for this repository.”
+- “Attach this screenshot to PR #7.”
 
 Codex also supports explicit `$github-issue-authoring` invocation; Claude Code exposes skills as slash commands; OpenCode loads them through its skill tool.
 
