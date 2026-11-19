@@ -78,3 +78,7 @@ The validator checks portable names, required frontmatter, descriptions, and the
 - [OpenAI: Build skills](https://developers.openai.com/codex/skills)
 - [Anthropic: Extend Claude with skills](https://code.claude.com/docs/en/skills)
 - [OpenCode: Skills](https://opencode.ai/v2/docs/skills)
+
+## License
+
+MIT; see [LICENSE](LICENSE).
